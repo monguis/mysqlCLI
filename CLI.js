@@ -15,43 +15,8 @@ connection.connect((err) => {
     if (err) throw err;
 
 
+    mainMenu()
 
-
-
-    inquirer.prompt({
-        name: "functionallity",
-        type: "rawlist",
-        choices: ["Add registry",
-            "View current Data",
-            "Update employee Role",
-            "Bonus:manager update",
-            "Bonus:view managers",
-            "Bonus:Delete a Registry",
-            "Bonus,  combined salaries"]
-    }).then(({ functionallity }) => {
-        console.log(functionallity);
-
-        switch (functionallity) {
-            case "Add registry":
-                addData()
-                break;
-            case "View current Data":
-                viewData()
-                break;
-            case "Update employee Role":
-                break;
-            case "Bonus:manager update":
-                break;
-            case "Bonus:view managers":
-                break;
-            case "Bonus:Delete a Registry":
-                break;
-            case "Bonus,  combined salaries":
-                break;
-
-        }
-
-    });
 
 });
 
@@ -59,7 +24,7 @@ const viewData = () => {
     inquirer.prompt({
         type: "list",
         name: "option",
-        text: "What Table would you like to check?",
+        message: "What Table would you like to check?",
         choices: ["Employee", "Role", "Department"]
     }).then(({ option }) => {
         console.log()
@@ -73,35 +38,180 @@ const viewData = () => {
 
 }
 
+
+
 const addData = () => {
     inquirer.prompt({
         type: "list",
         name: "option",
-        text: "What Table would you like to add?",
+        message: "What Table would you like to add?",
         choices: ["Employee", "Role", "Department"]
     }).then(({ option }) => {
-        switch (option) {
-            case "Employee":
-                console.log("Employee")
-                break;
-            case "Role":
-                break;
-            case "Department":
-                break;
-        }
-        connection.query(`select * from ${option.toLowerCase()}`, (err, res) => {
-            if (err) throw err;
 
-            console.log(res);
-            connection.end()
+        inquirer.prompt(generateQuestions(option)).then(resp => {
+            let columns = [];
+            let values = [];
+            for (key in resp) {
+                columns.push([key]);
+                values.push(resp[key]);
+                // marks +="?";/
+            }
+
+            connection.query(`INSERT INTO ?? (??) VALUES (?)`, [option.toLowerCase(), columns, values], (err, res) => {
+                if (err) throw err;
+
+                connection.end()
+            })
         })
     })
 
 }
-// ;
 
-//   * View departments, roles, employees
+const updateData = () => {
 
+
+
+
+
+    // var query = "SELECT top_albums.year, top_albums.album, top_albums.position, top5000.song, top5000.artist ";
+    // query += "FROM top_albums INNER JOIN top5000 ON (top_albums.artist = top5000.artist AND top_albums.year ";
+    // query += "= top5000.year) WHERE (top_albums.artist = ? AND top5000.artist = ?) ORDER BY top_albums.year, top_albums.position";
+
+
+
+
+
+
+
+    connection.query(`select employee.id,employee.first_name,employee.last_name,role.title 
+        from employee INNER JOIN role ON (employee.role_id = role.id)`, (err, res) => {
+        if (err) throw err;
+        console.log(res)
+        inquirer.prompt({
+            type: "rawlist",
+            name: "option",
+            message: "What employee role needs to change?",
+            choices: res.map(elt => `${elt.first_name} ${elt.last_name}||${elt.title}`)
+        }).then(({ option }) => {
+            // connection.query(`UPDATE employee SET role.id`,(err) => {
+            //     if (err) throw err
+            // })
+            //     UPDATE[LOW_PRIORITY][IGNORE] table_name
+            //     SET
+            //     column_name1 = expr1,
+            //         column_name2 = expr2,
+            //         ...
+            // [WHERE
+            //         condition];
+
+
+            console.log(option);
+        });
+        connection.end()
+    });
+
+
+
+}
+
+const generateQuestions = (option) => {
+    const questionArr = [];
+    switch (option) {
+        case "Employee":
+            questionArr.push(
+                {
+                    type: "input",
+                    name: "first_name",
+                    message: "First name?"
+                },
+                {
+                    type: "input",
+                    name: "last_name",
+                    message: "Last name?"
+                },
+                {
+                    type: "input",   // call database to link foreign key
+                    name: "role_id",
+                    message: "Role?"
+                })
+            break;
+        case "Role":
+            questionArr.push(
+                {
+                    type: "input",
+                    name: "title",
+                    message: "role title?"
+                },
+                {
+                    type: "input",
+                    name: "salary",
+                    message: "salary?"
+                },
+                {
+                    type: "input",
+                    name: "department_id",
+                    message: "belonging department?" // call database to link foreign key
+                });
+            break;
+        case "Department":
+            questionArr.push(
+                {
+                    type: "input",
+                    name: "department",
+                    message: "Department name?"
+                });
+            break;
+        default:
+            return "not a valid input"
+    }
+    return questionArr;
+}
+
+
+const mainMenu = () => {
+
+    inquirer.prompt({
+        name: "functionallity",
+        type: "rawlist",
+        message: "What would you like to do today?",
+        choices: ["Add registry",
+            "View current Data",
+            "Update employee Role",
+            "Bonus:manager update",
+            "Bonus:view managers",
+            "Bonus:Delete a Registry",
+            "Bonus,  combined salaries",
+            "exit"
+        ]
+    }).then(({ functionallity }) => {
+        console.log(functionallity);
+
+        switch (functionallity) {
+            case "Add registry":
+                addData()
+                break;
+            case "View current Data":
+                viewData()
+                break;
+            case "Update employee Role":
+                updateData()
+                break;
+            case "Bonus:manager update":
+                break;
+            case "Bonus:view managers":
+                break;
+            case "Bonus:Delete a Registry":
+                break;
+            case "Bonus,  combined salaries":
+                break;
+            case "exit":
+                return false;
+                break;
+
+        }
+
+    });
+}
 //   * Update employee roles
 
 // Bonus points if you're able to:
