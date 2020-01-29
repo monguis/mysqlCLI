@@ -14,9 +14,7 @@ const connection = mysql.createConnection({
 connection.connect((err) => {
     if (err) throw err;
 
-
     mainMenu()
-
 
 });
 
@@ -32,10 +30,9 @@ const viewData = () => {
             if (err) throw err;
 
             console.log(res);
-            connection.end()
+            mainMenu()
         })
     })
-
 }
 
 
@@ -60,7 +57,7 @@ const addData = () => {
             connection.query(`INSERT INTO ?? (??) VALUES (?)`, [option.toLowerCase(), columns, values], (err, res) => {
                 if (err) throw err;
 
-                connection.end()
+                mainMenu()
             })
         })
     })
@@ -69,45 +66,51 @@ const addData = () => {
 
 const updateData = () => {
 
-
-
-
-
     // var query = "SELECT top_albums.year, top_albums.album, top_albums.position, top5000.song, top5000.artist ";
     // query += "FROM top_albums INNER JOIN top5000 ON (top_albums.artist = top5000.artist AND top_albums.year ";
     // query += "= top5000.year) WHERE (top_albums.artist = ? AND top5000.artist = ?) ORDER BY top_albums.year, top_albums.position";
 
-
-
-
-
-
-
     connection.query(`select employee.id,employee.first_name,employee.last_name,role.title 
         from employee INNER JOIN role ON (employee.role_id = role.id)`, (err, res) => {
         if (err) throw err;
-        console.log(res)
+console.log("\n Employee table");
+
+        for (const result of res) {
+            console.log(`id: ${result.id} || ${result.first_name} ${result.last_name} || ${result.title}`)
+        }
+
         inquirer.prompt({
-            type: "rawlist",
-            name: "option",
-            message: "What employee role needs to change?",
-            choices: res.map(elt => `${elt.first_name} ${elt.last_name}||${elt.title}`)
-        }).then(({ option }) => {
-            // connection.query(`UPDATE employee SET role.id`,(err) => {
-            //     if (err) throw err
-            // })
-            //     UPDATE[LOW_PRIORITY][IGNORE] table_name
-            //     SET
-            //     column_name1 = expr1,
-            //         column_name2 = expr2,
-            //         ...
-            // [WHERE
-            //         condition];
+            type: "list",
+            name: "employeeId",
+            message: "What employee needs a role change?",
+            choices: res.map(elt => elt.id)
+        }).then(({ employeeId }) => {
+            connection.query("SELECT title,id from role", (err, res) => {
+                if (err) throw err;
 
+                console.log("\n Roles table");
 
-            console.log(option);
+                for (const result of res) {
+                    console.log(`id: ${result.id} || ${result.title}`)
+                }
+                inquirer.prompt({
+                    type: "list",
+                    name: "roleId",
+                    message: "What's the new role'",
+                    choices: res.map(elt => elt.id)
+                }).then(({ roleId }) => {
+                    console.log(roleId, employeeId)
+                    connection.query(`UPDATE employee SET ? WHERE ?`,[{role_id:roleId},{id:employeeId}],(err) => {
+                        if(err)throw err
+                        mainMenu()
+                    });
+                    
+                })
+            });
+
+            // console.log(option);
         });
-        connection.end()
+
     });
 
 
@@ -205,8 +208,8 @@ const mainMenu = () => {
             case "Bonus,  combined salaries":
                 break;
             case "exit":
+                connection.end()
                 return false;
-                break;
 
         }
 
